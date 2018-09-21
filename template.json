@@ -1,0 +1,482 @@
+{
+    "kind": "Template",
+    "apiVersion": "v1",
+    "metadata": {
+        "name": "conductor",
+        "creationTimestamp": null,
+        "annotations": {
+            "description": "Conductor base setup",
+            "openshift.io/display-name": "Conductor",
+            "openshift.io/long-description": "This template deploys Conductor server, Conductor UI, and a Dynomite instance.",
+            "tags": "conductor"
+        }
+    },
+    "message": "The Conductor server and ui have been deployed to your project",
+    "objects": [
+        {
+            "kind": "DeploymentConfig",
+            "apiVersion": "v1",
+            "metadata": {
+                "name": "conductor-server"
+            },
+            "spec": {
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "app": "conductor",
+                            "tier": "server"
+                        }
+                    },
+                    "spec": {
+                        "volumes":[
+                            {
+                                "name": "conductor-server-config",
+                                "configMap": {
+                                    "name": "conductor-server-config"
+                                }
+                            }
+                        ],
+                        "containers": [
+                            {
+                                "name": "conductor-server",
+                                "image": "${SERVER_IMAGE_NAME}",
+                                "env": [
+                                    {
+                                        "name": "CONFIG_PROP",
+                                        "value": "config.properties"
+                                    }
+                                ],
+                                "ports": [
+                                    {
+                                        "containerPort": 8080,
+                                        "name": "http",
+                                        "protocol": "TCP"
+                                    }
+                                ],
+                                "livenessProbe": {
+                                    "httpGet": {
+                                        "path": "/",
+                                        "port": 8080
+                                    },
+                                    "initialDelaySeconds": 240,
+                                    "periodsSeconds": 60
+                                },
+                                "volumeMounts": [
+                                    {
+                                        "mountPath": "/app/config",
+                                        "name": "conductor-server-config"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                },
+                "replicas": 1,
+                "selector": {
+                    "app": "conductor",
+                    "tier": "server"
+                },
+                "triggers": [
+                    {
+                        "type": "ConfigChange"
+                    },
+                    {
+                        "type": "ImageChange",
+                        "imageChangeParams": {
+                            "automatic": true,
+                            "containerNames": [
+                                "conductor-server"
+                            ],
+                            "from": {
+                                "kind": "ImageStreamTag",
+                                "name": "${SERVER_IMAGE_NAME}:${SERVER_IMAGE_VERSION}"
+                            }
+                        }
+                    }
+                ],
+                "strategy": {
+                    "type": "Rolling"
+                }
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Service",
+            "metadata": {
+                "name": "conductor-server"
+            },
+            "spec": {
+                "ports": [
+                    {
+                        "name": "http",
+                        "port": 8080,
+                        "protocol": "TCP",
+                        "targetPort": "http"
+                    }
+                ],
+                "selector": {
+                    "app": "conductor",
+                    "tier": "server"
+                },
+                "sessionAffinity": "None",
+                "type": "ClusterIP"
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Route",
+            "metadata": {
+                "name": "conductor-server"
+            },
+            "spec": {
+                "to": {
+                    "kind": "Service",
+                    "name": "conductor-server"
+                }
+            }
+        },
+        {
+            "kind": "DeploymentConfig",
+            "apiVersion": "v1",
+            "metadata": {
+                "name": "conductor-ui"
+            },
+            "spec": {
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "app": "conductor",
+                            "tier": "ui"
+                        }
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "name": "conductor-ui",
+                                "image": "${UI_IMAGE_NAME}",
+                                "env": [
+                                    {
+                                        "name": "WF_SERVER",
+                                        "value": "http://conductor-server:8080/api/"
+                                    }
+                                ],
+                                "ports": [
+                                    {
+                                        "containerPort": 5000,
+                                        "name": "http",
+                                        "protocol": "TCP"
+                                    }
+                                ],
+                                "livenessProbe": {
+                                    "httpGet": {
+                                        "path": "/",
+                                        "port": 5000
+                                    },
+                                    "initialDelaySeconds": 240,
+                                    "periodsSeconds": 60
+                                }
+                            }
+                        ]
+                    }
+                },
+                "replicas": 1,
+                "selector": {
+                    "app": "conductor",
+                    "tier": "ui"
+                },
+                "triggers": [
+                    {
+                        "type": "ConfigChange"
+                    },
+                    {
+                        "type": "ImageChange",
+                        "imageChangeParams": {
+                            "automatic": true,
+                            "containerNames": [
+                                "conductor-ui"
+                            ],
+                            "from": {
+                                "kind": "ImageStreamTag",
+                                "name": "${UI_IMAGE_NAME}:${UI_IMAGE_VERSION}"
+                            }
+                        }
+                    }
+                ],
+                "strategy": {
+                    "type": "Rolling"
+                }
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Service",
+            "metadata": {
+                "name": "conductor-ui"
+            },
+            "spec": {
+                "ports": [
+                    {
+                        "name": "http",
+                        "port": 5000,
+                        "protocol": "TCP",
+                        "targetPort": "http"
+                    }
+                ],
+                "selector": {
+                    "app": "conductor",
+                    "tier": "ui"
+                },
+                "sessionAffinity": "None",
+                "type": "ClusterIP"
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Route",
+            "metadata": {
+                "name": "conductor-ui"
+            },
+            "spec": {
+                "to": {
+                    "kind": "Service",
+                    "name": "conductor-ui"
+                }
+            }
+        },
+        {
+            "kind": "DeploymentConfig",
+            "apiVersion": "v1",
+            "metadata": {
+                "name": "dynomite"
+            },
+            "spec": {
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "app": "dynomite"
+                        }
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "name": "dynomite",
+                                "image": "dynomite",
+                                "ports": [
+                                    {
+                                        "containerPort": 8101,
+                                        "name": "peer-port",
+                                        "protocol": "TCP"
+                                    },
+                                    {
+                                        "containerPort": 8102,
+                                        "name": "default-port",
+                                        "protocol": "TCP"
+                                    },
+                                    {
+                                        "containerPort": 22122,
+                                        "name": "redis-port",
+                                        "protocol": "TCP"
+                                    },
+                                    {
+                                        "containerPort": 22222,
+                                        "name": "admin-port",
+                                        "protocol": "TCP"
+                                    }
+                                    
+                                ]
+                            }
+                        ]
+                    }
+                },
+                "replicas": 1,
+                "selector": {
+                    "app": "dynomite"
+                },
+                "triggers": [
+                    {
+                        "type": "ConfigChange"
+                    },
+                    {
+                        "type": "ImageChange",
+                        "imageChangeParams": {
+                            "automatic": true,
+                            "containerNames": [
+                                "dynomite"
+                            ],
+                            "from": {
+                                "kind": "ImageStreamTag",
+                                "name": "dynomite:latest"
+                            }
+                        }
+                    }
+                ],
+                "strategy": {
+                    "type": "Rolling"
+                }
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Service",
+            "metadata": {
+                "name": "dynomite"
+            },
+            "spec": {
+                "ports": [
+                    {
+                        "name": "peer-port",
+                        "port": 8101,
+                        "protocol": "TCP",
+                        "targetPort": "peer-port"
+                    },
+                    {
+                        "name": "default-port",
+                        "port": 8102,
+                        "protocol": "TCP",
+                        "targetPort": "default-port"
+                    },
+                    {
+                        "name": "redis-port",
+                        "port": 22122,
+                        "protocol": "TCP",
+                        "targetPort": "redis-port"
+                    },
+                    {
+                        "name": "admin-port",
+                        "port": 22222,
+                        "protocol": "TCP",
+                        "targetPort": "admin-port"
+                    }
+                ],
+                "selector": {
+                    "app": "dynomite"
+                },
+                "sessionAffinity": "None",
+                "type": "ClusterIP"
+            }
+        },
+        {
+            "kind": "DeploymentConfig",
+            "apiVersion": "v1",
+            "metadata": {
+                "name": "elasticsearch"
+            },
+            "spec": {
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "app": "elasticsearch"
+                        }
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "name": "elasticsearch",
+                                "image": "elasticsearch",
+                                "ports": [
+                                    {
+                                        "containerPort": 9200,
+                                        "name": "default-port",
+                                        "protocol": "TCP"
+                                    },
+                                    {
+                                        "containerPort": 9300,
+                                        "name": "admin-port",
+                                        "protocol": "TCP"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                },
+                "replicas": 1,
+                "selector": {
+                    "app": "elasticsearch"
+                },
+                "triggers": [
+                    {
+                        "type": "ConfigChange"
+                    },
+                    {
+                        "type": "ImageChange",
+                        "imageChangeParams": {
+                            "automatic": true,
+                            "containerNames": [
+                                "elasticsearch"
+                            ],
+                            "from": {
+                                "kind": "ImageStreamTag",
+                                "name": "elasticsearch:2.4"
+                            }
+                        }
+                    }
+                ],
+                "strategy": {
+                    "type": "Rolling"
+                }
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Service",
+            "metadata": {
+                "name": "elasticsearch"
+            },
+            "spec": {
+                "ports": [
+                    {
+                        "name": "default-port",
+                        "port": 9200,
+                        "protocol": "TCP",
+                        "targetPort": "default-port"
+                    },
+                    {
+                        "name": "admin-port",
+                        "port": 9300,
+                        "protocol": "TCP",
+                        "targetPort": "admin-port"
+                    }
+                ],
+                "selector": {
+                    "app": "elasticsearch"
+                },
+                "sessionAffinity": "None",
+                "type": "ClusterIP"
+            }
+        }
+    ],
+    "parameters": [
+        {
+            "name": "SERVER_IMAGE_NAME",
+            "displayName": "Conductor Server Image",
+            "description": "ImageStream name used to deploy the Conductor server",
+            "value": "conductor-server",
+            "required": true
+        },
+        {
+            "name": "SERVER_IMAGE_VERSION",
+            "displayName": "Conductor Server Version",
+            "description": "ImageStream version used to deploy the Conductor server",
+            "value": "latest",
+            "required": true
+        },
+        {
+            "name": "UI_IMAGE_NAME",
+            "displayName": "Counductor UI Image",
+            "description": "ImageStream name used to deploy the Conductor ui",
+            "value": "conductor-ui",
+            "required": true
+        },
+        {
+            "name": "UI_IMAGE_VERSION",
+            "displayName": "Conductor UI Version",
+            "description": "ImageStream version used to deploy the Conductor ui",
+            "value": "latest",
+            "required": true
+        }
+    ],
+    "labels": {
+        "app": "conductor",
+        "template": "conductor-template"
+    }
+}
