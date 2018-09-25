@@ -1,0 +1,270 @@
+{
+  "kind": "Template",
+  "apiVersion": "v1",
+  "metadata": {
+    "name": "conductor-workers",
+    "creationTimestamp": null,
+    "annotations": {
+      "description": "Conductor Worker setup template",
+      "openshift.io/display-name": "Conductor Workers",
+      "openshift.io/long-description": "This template deploys a set of default Conductor Workers",
+      "tags": "conductor"
+    }
+  },
+  "message": "The Conductor workers have been deployed to your project",
+  "objects": [
+    {
+      "kind": "DeploymentConfig",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "greeting-worker"
+      },
+      "spec": {
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "greeting-worker"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "greeting-worker",
+                "image": "worker-clients",
+                "ports": [],
+                "env": [
+                  {
+                    "name": "RUN_MODE",
+                    "value": "1"
+                  },
+                  {
+                    "name": "CONDUCTOR_HOST",
+                    "value": "${CONDUCTOR_HOST}"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "replicas": 1,
+        "selector": {
+          "app": "greeting-worker"
+        },
+        "triggers": [
+          {
+            "type": "ConfigChange"
+          },
+          {
+            "type": "ImageChange",
+            "imageChangeParams": {
+              "automatic": true,
+              "containerNames": [
+                "greeting-worker"
+              ],
+              "from": {
+                "kind": "ImageStreamTag",
+                "name": "worker-clients:latest"
+              }
+            }
+          }
+        ],
+        "strategy": {
+          "type": "Rolling"
+        }
+      }
+    },
+    {
+      "kind": "DeploymentConfig",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "multiply-worker"
+      },
+      "spec": {
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "multiply-worker"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "multiply-worker",
+                "image": "worker-clients",
+                "ports": [],
+                "env": [
+                  {
+                    "name": "RUN_MODE",
+                    "value": "2"
+                  },
+                  {
+                    "name": "CONDUCTOR_HOST",
+                    "value": "${CONDUCTOR_HOST}"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "replicas": 1,
+        "selector": {
+          "app": "multiply-worker"
+        },
+        "triggers": [
+          {
+            "type": "ConfigChange"
+          },
+          {
+            "type": "ImageChange",
+            "imageChangeParams": {
+              "automatic": true,
+              "containerNames": [
+                "multiply-worker"
+              ],
+              "from": {
+                "kind": "ImageStreamTag",
+                "name": "worker-clients:latest"
+              }
+            }
+          }
+        ],
+        "strategy": {
+          "type": "Rolling"
+        }
+      }
+    },
+    {
+      "kind": "DeploymentConfig",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "date-worker"
+      },
+      "spec": {
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "date-worker"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "date-worker",
+                "image": "worker-clients",
+                "ports": [],
+                "env": [
+                  {
+                    "name": "RUN_MODE",
+                    "value": "3"
+                  },
+                  {
+                    "name": "CONDUCTOR_HOST",
+                    "value": "${CONDUCTOR_HOST}"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "replicas": 1,
+        "selector": {
+          "app": "date-worker"
+        },
+        "triggers": [
+          {
+            "type": "ConfigChange"
+          },
+          {
+            "type": "ImageChange",
+            "imageChangeParams": {
+              "automatic": true,
+              "containerNames": [
+                "date-worker"
+              ],
+              "from": {
+                "kind": "ImageStreamTag",
+                "name": "worker-clients:latest"
+              }
+            }
+          }
+        ],
+        "strategy": {
+          "type": "Rolling"
+        }
+      }
+    },
+    {
+      "kind": "DeploymentConfig",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "report-worker"
+      },
+      "spec": {
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "report-worker"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "report-worker",
+                "image": "worker-clients",
+                "ports": [],
+                "env": [
+                  {
+                    "name": "RUN_MODE",
+                    "value": "4"
+                  },
+                  {
+                    "name": "CONDUCTOR_HOST",
+                    "value": "${CONDUCTOR_HOST}"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "replicas": 1,
+        "selector": {
+          "app": "report-worker"
+        },
+        "triggers": [
+          {
+            "type": "ConfigChange"
+          },
+          {
+            "type": "ImageChange",
+            "imageChangeParams": {
+              "automatic": true,
+              "containerNames": [
+                "report-worker"
+              ],
+              "from": {
+                "kind": "ImageStreamTag",
+                "name": "worker-clients:latest"
+              }
+            }
+          }
+        ],
+        "strategy": {
+          "type": "Rolling"
+        }
+      }
+    }
+  ],
+  "parameters": [
+    {
+      "name": "CONDUCTOR_HOST",
+      "displayName": "Conductor Webserver host address",
+      "description": "Url for the Conductor Webserver host",
+      "value": "http://conductor-server:8080",
+      "required": true
+    }
+  ],
+  "labels": {
+    "app": "conductor-workers",
+    "template": "conductor-workers-template"
+  }
+}

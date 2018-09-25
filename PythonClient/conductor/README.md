@@ -1,0 +1,2 @@
+# Conductor Python Client
+Please note that this code is a local copy with minor changes included of the work done by the Netflix team in this [repo](https://github.com/Netflix/conductor/tree/master/client/python).
